@@ -1,2 +1,3 @@
+include collective/recipe/template/README.TXT
 recursive-include docs *
 
