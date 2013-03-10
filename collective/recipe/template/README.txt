@@ -1,295 +1,86 @@
-Detailed Description
-********************
+Introduction
+************
 
-Simple creation of a file out of a template
-===========================================
+This recipe can be used to generate textfiles from a (text)
+template.
 
-Lets create a minimal `buildout.cfg` file::
+.. contents::
 
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = template.in
-  ... output = template
-  ... ''')
+A short example::
 
-We create a template file::
+  [buildout]
+  parts = message
 
-  >>> write('template.in',
-  ... '''#
-  ... My template knows about buildout path:
-  ...   ${buildout:directory}
-  ... ''')
+  [message]
+  recipe = collective.recipe.template
+  input = templates/message.in
+  output = ${buildout:parts-directory}/etc/message
 
-Now we can run buildout::
-
-  >>> print system(join('bin', 'buildout')),
-  Installing template.
-
-The template was indeed created::
-
-  >>> cat('template')
-  #
-  My template knows about buildout path:
-  .../sample-buildout
-
-The variable ``buildout:directory`` was also substituted by a path.
+  mymessage = Hello, World!
 
 
-Using inline input
-==================
+In the template you can use the exact same variables as you can use
+in the buildout configuration. For example an input file can look like this::
 
-For very short script it can make sense to put the source directly into
-`buildout.cfg`::
-
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = inline:
-  ...    #!/bin/bash
-  ...    echo foo
-  ... output = ${buildout:parts-directory}/template
-  ... ''')
-
-Now we can run buildout::
-
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-The template should have been created::
-
-  >>> cat('parts', 'template')
-  #!/bin/bash
-  echo foo
-
-Normally the file mode gets copied from the template, but it can also be
-specified manually, which especially makes sense in this case:
-
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... inline =
-  ...    #!/bin/bash
-  ...    echo foo
-  ... output = ${buildout:parts-directory}/template
-  ... mode = 755
-  ... ''')
-
-Run buildout again ::
-
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-The template should have the specified file mode::
-
-  >>> from os import stat
-  >>> from stat import S_IMODE
-  >>> print '%o' % S_IMODE(stat('parts/template').st_mode)
-  755
-
-Using URL input
-===============
-
-.. Warning:: There is a security risk inherent with using URL input.
-    Please be careful.
-
-Similarly, you may want to read input from a URL, e.g.::
-
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... url = file:///tmp/template.in
-  ... output = template
-  ... ''')
-
-To demonstrate this, first we create a template file::
-
-  >>> write('/tmp/template.in',
-  ... '''#
-  ... My template knows about buildout path:
-  ...   ${buildout:directory}
-  ... ''')
-
-Now we can run buildout::
-
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-The template should have been created::
-
-  >>> cat('template')
-  #
-  My template knows about buildout path:
-  .../sample-buildout
-
-Creating a template in a variable path
-======================================
-
-Lets create a minimal `buildout.cfg` file. This time the output should
-happen in a variable path::
-
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = template.in
-  ... output = ${buildout:parts-directory}/template
-  ... ''')
-
-Now we can run buildout::
-
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-The template was indeed created::
-
-  >>> cat('parts', 'template')
-  #
-  My template knows about buildout path:
-  .../sample-buildout
+  My top level directory is ${buildout:directory}
+  Executables are stored in ${buildout:bin-directory}
 
 
-Creating missing paths
-======================
+As an extension to the buildout syntax you can reference variables from
+the current buildout part directly. For example::
 
-If an output file should be created in a path that does not yet exist,
-then the missing items will be created for us::
-
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = template.in
-  ... output = ${buildout:parts-directory}/etc/template
-  ... ''')
-
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-Also creation of several subdirectories is supported::
+  My message is: ${mymessage}
 
 
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = template.in
-  ... output = ${buildout:parts-directory}/foo/bar/template
-  ... ''')
+Features
+========
 
-  >>> print system(join('bin', 'buildout')),
-  Uninstalling template.
-  Installing template.
-
-  >>> cat('parts', 'foo', 'bar', 'template')
-  #
-  My template knows about buildout path:
-  .../sample-buildout
-
-When changes happen to the output path, then the old path is removed
-on uninstall. Therefore the ``etc/`` directory created above has
-vanished now::
-
-  >>> ls('parts')
-  d  foo
+* Starting with version 1.3, you can also specify a path to the output
+  file and the path will be created if it does not exist.
+* Starting with version 1.5, you can use inline templates.
+* Starting with version 1.7, you can use `genshi text templates`_.
+* Starting with version 1.9, you can use a URL to specify template input.
 
 
-Substituting variables with options of other parts
-==================================================
+Genshi text templates
+---------------------
 
-When substituting variables in a template, dependencies on other buildout
-parts can occur. Buildout will resolve them by determining the values of those
-other parts' options first. To see this, we create a buildout involving a
-template that uses a variable computed by a part that would not otherwise be
-built:
+A short example::
 
-  >>> write('dummy.py',
-  ... '''
-  ... class Recipe(object):
-  ...
-  ...     def __init__(self, buildout, name, options):
-  ...         options['foo'] = 'bar'
-  ...
-  ...     def install(self):
-  ...         return ()
-  ...
-  ...     def update(self):
-  ...         pass
-  ... ''')
+  [buildout]
+  parts = message
 
-  >>> write('setup.py',
-  ... '''
-  ... from setuptools import setup
-  ...
-  ... setup(name='dummyrecipe',
-  ...       entry_points = {'zc.buildout': ['default = dummy:Recipe']})
-  ... ''')
+  [message]
+  recipe = collective.recipe.template[genshi]:genshi
+  input = templates/message.in
+  output = ${buildout:parts-directory}/etc/message
+  some-option = value
 
-  >>> write('buildout.cfg',
-  ... '''
-  ... [buildout]
-  ... develop = .
-  ... parts = template
-  ... offline = true
-  ...
-  ... [template]
-  ... recipe = collective.recipe.template
-  ... input = template.in
-  ... output = template
-  ...
-  ... [other]
-  ... recipe = dummyrecipe
-  ... ''')
+  mymessage = Hello, World!
 
-  >>> write('template.in',
-  ... '''#
-  ... My template knows about another buildout part:
-  ... ${other:foo}
-  ... ''')
+In the template you can use the exact same variables as you can use
+in the buildout configuration, but instead of colons as the separator you
+either have to use attribute access, or for options with a dash dictionary
+syntax. The global buildout config is accessible through ``parts``, the
+current part through ``options``.
 
-  >>> print system(join('bin', 'buildout')),
-  Develop: '/sample-buildout/.'
-  Uninstalling template.
-  Installing other.
-  Installing template.
+For example an input file can look like this::
 
-  >>> cat('template')
-  #
-  My template knows about another buildout part:
-  bar
+  My top level directory is ${parts.buildout.directory}
+  Executables are stored in ${parts.buildout['bin-directory']}
+  Accessing the current part: ${options['some-option']}
+
+
+Why another template recipe?
+============================
+
+Both `iw.recipe.template`_ and `inquant.recipe.textfile`_ claim to do the
+same thing. I have found them to be undocumented and too buggy for real
+world use, and neither are in a public repository where I could fix them. In
+addition this implementation leverages the buildout variable substitution
+code, making it a lot simpler.
+
+
+.. _genshi text templates: http://genshi.edgewall.org/wiki/Documentation/text-templates.html
+.. _iw.recipe.template: http://pypi.python.org/pypi/iw.recipe.template
+.. _inquant.recipe.textfile: http://pypi.python.org/pypi/inquant.recipe.textfile
