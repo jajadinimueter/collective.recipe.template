@@ -37,5 +37,6 @@ setup(name='collective.recipe.template',
       default = collective.recipe.template:Recipe
       genshi = collective.recipe.template.genshitemplate:Recipe
       """,
+      package_data={'': ['*.txt']},
       use_2to3=True,
       )
