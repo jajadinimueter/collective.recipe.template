@@ -7,8 +7,6 @@ setup(name='collective.recipe.template',
       version=version,
       description="Buildout recipe to generate a text file from a template",
       long_description=open("README.txt").read() + "\n\n" +
-                       open(os.path.join("collective", "recipe", "template",
-                                         "README.txt")).read() + "\n\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       classifiers=[
           "Framework :: Buildout",
@@ -37,6 +35,5 @@ setup(name='collective.recipe.template',
       default = collective.recipe.template:Recipe
       genshi = collective.recipe.template.genshitemplate:Recipe
       """,
-      package_data={'': ['*.txt']},
       use_2to3=True,
       )
